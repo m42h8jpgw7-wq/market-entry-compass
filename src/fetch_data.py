@@ -6,6 +6,10 @@ Run once (and again whenever you want fresh data):
 
 Result: data/processed/indicators.csv in "long" format, one row per
 country / indicator / year.
+
+Indicators marked `optional` in config.py are skipped (with a warning) if the
+World Bank does not deliver them; the dashboard then simply leaves that
+criterion out. Core indicators must work, otherwise the script stops.
 """
 
 import sys
@@ -76,14 +80,23 @@ def _download(key: str, code: str, source: int | None) -> pd.DataFrame:
         page += 1
         time.sleep(0.2)  # be polite to the API
 
+    if not rows:
+        raise RuntimeError(f"{code} returned no values for these countries")
     return pd.DataFrame(rows)
 
 
 def main() -> None:
-    frames = []
+    frames, skipped = [], []
     for key, spec in INDICATORS.items():
         print(f"Downloading {key} ({spec['code']}) ...", flush=True)
-        frame = fetch_indicator(key, spec)
+        try:
+            frame = fetch_indicator(key, spec)
+        except (RuntimeError, requests.RequestException) as error:
+            if spec.get("optional"):
+                print(f"  SKIPPED (optional): {error}")
+                skipped.append(key)
+                continue
+            raise
         print(f"  -> {len(frame)} data points")
         frames.append(frame)
 
@@ -94,10 +107,12 @@ def main() -> None:
     out.parent.mkdir(parents=True, exist_ok=True)
     data.to_csv(out, index=False)
     print(f"\nSaved {len(data)} rows for {data['iso3'].nunique()} countries to {out}")
+    if skipped:
+        print("Skipped optional indicators: " + ", ".join(skipped))
 
 
 if __name__ == "__main__":
     try:
         main()
-    except requests.RequestException as error:
-        sys.exit(f"Network problem while calling the World Bank API: {error}")
+    except (RuntimeError, requests.RequestException) as error:
+        sys.exit(f"Problem while calling the World Bank API: {error}")
