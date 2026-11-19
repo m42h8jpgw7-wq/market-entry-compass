@@ -65,6 +65,7 @@ ss.setdefault("done", False)
 ss.setdefault("ans", {"business_model": "b2b", "budget": "low", "priority": "balanced",
                       "home": "DEU", "description": "", "notes": "", "industry_name": ""})
 ans = ss["ans"]
+ss.setdefault("picked", set())  # answers the user chose, so no card starts out highlighted
 
 # A shared link or an uploaded scenario can fill in the answers and skip the questions.
 if "loaded" not in ss:
@@ -94,6 +95,7 @@ def choose(field: str, value: str, jump: int | None = None):
         if value == "other":
             ans["focus"] = "general"
     ans[field] = value
+    ss["picked"].add(field)
     ss["step"] = jump if jump is not None else ss["step"] + 1
 
 
@@ -112,7 +114,7 @@ def tiles(field: str, options: list[tuple[str, str, str]], columns: int = 3):
             with col.container(key=f"tile_{field}_{value}"):
                 st.markdown(tile(title, desc), unsafe_allow_html=True)
                 st.button("Choose", key=f"btn_{field}_{value}", width="stretch",
-                          type="primary" if ans.get(field) == value else "secondary",
+                          type="primary" if field in ss["picked"] and ans.get(field) == value else "secondary",
                           on_click=choose, args=(field, value))
 
 
