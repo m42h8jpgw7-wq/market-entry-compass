@@ -4,7 +4,7 @@
 
 Most founders pick their first foreign market by gut feeling or by whom they happen to know. Large companies have strategy teams for this decision; early-stage startups do not. Market Entry Compass is a free, transparent screening tool for startups in any industry: you describe your startup, it ranks 42 countries with public data, shows them on a globe you can turn and click, and explains the result. An optional AI advisor (Claude) writes a detailed recommendation, restricted to the numbers the tool provides.
 
-> Status: Version 3 (work in progress). A first screening tool, not a forecast and not legal or financial advice.
+> Status: Version 4 (work in progress). A first screening tool, not a forecast and not legal or financial advice.
 
 ![Startup profile and top recommendations](docs/img/startup-profile.png)
 
@@ -12,15 +12,15 @@ Most founders pick their first foreign market by gut feeling or by whom they hap
 
 ![Country analysis](docs/img/country-analysis.png)
 
-*Screenshots with real World Bank data (fintech, payments focus, home country Germany).*
+*Screenshots with real World Bank data (fintech, payments, home country Germany). Question 2 of 7, the result, and the country analysis.*
 
 ## What it does
 
-- **Startup profile:** industry and focus, customers (B2B / B2C), stage, budget, risk priority, home country, free-text description.
-- **Six industries, ten focuses:** Fintech, SaaS/B2B software, HealthTech, CleanTech/energy, E-commerce/consumer, and "Other industry" for everything else (general criteria plus your own description). A payments fintech and a financial-inclusion fintech want opposite things from "account ownership"; an off-grid energy startup wants LOW electricity access. Each focus has its own weights (see [`src/config.py`](src/config.py)).
-- **Fine-tune:** make any criterion more or less important with a slider and watch the ranking change.
+- **Seven simple questions, no experience needed:** industry, what exactly you do, who pays, budget, what matters most, home country, and an optional free-text description. Big answer cards instead of forms, plain-language explanations everywhere.
+- **Seven industries, 21 focuses:** Fintech, software for companies, health, energy and climate, shopping and consumer, education, and "Something else" for any other industry (you name it, general criteria are used). A payments fintech and a banking-for-the-unbanked startup want opposite things from "account ownership"; an off-grid energy startup wants LOW electricity access. Each focus has its own weights (see [`src/config.py`](src/config.py)).
+- **Advanced (optional):** make any criterion count more or less with a slider and watch the ranking change.
 - **3D globe:** drag to rotate, click a country to open its analysis.
-- **Country analysis:** score, strengths, risks, five-year trends, points per criterion, score history since 2005.
+- **Country analysis:** score, strengths, risks, five-year trends, a plain-language explanation of every criterion, score history since 2005.
 - **Data briefing:** a rule-based written explanation, built only from the numbers.
 - **AI advisor (optional):** Claude reads your profile and the evidence tables and writes a structured recommendation: why #1, why not the others, risks, first 90 days, what the data cannot tell you. It must justify every country with concrete data points and say what to verify. You bring your own Anthropic API key; the app does not store it.
 

@@ -37,6 +37,29 @@ div[data-testid="stHeading"] {{ margin-top: 1.4rem; }}
 .mec-hint {{ border-left: 3px solid {BLUE}; padding: .15rem 0 .15rem .8rem; color: {INK};
   font-size: .95rem; line-height: 1.5; margin: .6rem 0 .2rem; }}
 
+
+/* guided questions */
+.st-key-wizard {{ max-width: 1000px; }}
+.mec-q {{ font-family: 'Inter Tight', 'Inter', system-ui, sans-serif; font-size: 2rem; font-weight: 700;
+  letter-spacing: -0.03em; line-height: 1.15; margin: .9rem 0 .3rem; color: {INK}; }}
+.mec-qhelp {{ color: {MUTED}; font-size: 1.02rem; margin: 0 0 1.3rem; line-height: 1.5; }}
+.mec-step {{ color: {MUTED}; font-size: .86rem; margin-top: .3rem; }}
+[class*="st-key-tile_"] {{ background: #fff; border: 1px solid {LINE}; border-radius: 12px;
+  padding: 1.05rem 1.15rem 1rem; min-height: 13.4rem; transition: border-color .15s, box-shadow .15s; }}
+[class*="st-key-tile_"]:hover {{ border-color: {BLUE}; box-shadow: 0 2px 14px rgba(31,94,255,.10); }}
+.mec-tile-t {{ font-family: 'Inter Tight', 'Inter', system-ui, sans-serif; font-weight: 600;
+  font-size: 1.12rem; letter-spacing: -0.01em; color: {INK}; margin-bottom: .25rem; }}
+.mec-tile-d {{ color: {MUTED}; font-size: .92rem; line-height: 1.45; margin-bottom: .7rem; }}
+[class*="st-key-tile_"] > div:last-child {{ margin-top: auto; }}
+[class*="st-key-tile_"] .stButton > button {{ border-radius: 8px; font-weight: 600; }}
+.stProgress > div > div > div > div {{ background-color: {BLUE}; }}
+
+/* answers summary on the results page */
+.mec-chips {{ display: flex; flex-wrap: wrap; gap: 8px; margin: .6rem 0 .3rem; }}
+.mec-chip {{ background: #fff; border: 1px solid {LINE}; border-radius: 999px; padding: .28rem .8rem;
+  font-size: .86rem; color: {INK}; }}
+.mec-lead {{ font-size: 1.15rem; line-height: 1.5; color: {INK}; max-width: 46em; }}
+
 /* white panels */
 [class*="st-key-panel"] {{ background: #fff; border: 1px solid {LINE}; border-radius: 12px;
   padding: 1.3rem 1.4rem; }}
@@ -100,10 +123,9 @@ def esc(text) -> str:
 def hero() -> str:
     return (
         '<div class="mec-hero"><div class="brand">Market Entry Compass</div>'
-        "<h1>Choose your first foreign market with evidence.</h1>"
-        "<p>Describe your startup in any industry. The tool ranks 42 countries with open "
-        "World Bank data, shows them on a globe and explains the result. An AI adviser "
-        "can write a detailed recommendation from the same numbers.</p></div>"
+        "<h1>Which country should your startup enter first?</h1>"
+        "<p>Answer a few simple questions. We compare 42 countries with open World Bank data "
+        "and explain the result in plain language. No experience needed.</p></div>"
     )
 
 
@@ -131,3 +153,16 @@ def ranking_table(ranking, selected: str) -> str:
             f"<td class='v'>{r.score:.0f}</td><td class='cov'>{r.coverage * 100:.0f} %</td></tr>"
         )
     return f'<div class="mec-scroll"><table class="mec-rank">{"".join(rows)}</table></div>'
+
+
+def question(title: str, help_text: str = "") -> str:
+    helper = f'<p class="mec-qhelp">{esc(help_text)}</p>' if help_text else ""
+    return f'<div class="mec-q">{esc(title)}</div>{helper}'
+
+
+def tile(title: str, description: str) -> str:
+    return f'<div class="mec-tile-t">{esc(title)}</div><div class="mec-tile-d">{esc(description)}</div>'
+
+
+def chips(items: list[str]) -> str:
+    return '<div class="mec-chips">' + "".join(f'<span class="mec-chip">{esc(i)}</span>' for i in items) + "</div>"

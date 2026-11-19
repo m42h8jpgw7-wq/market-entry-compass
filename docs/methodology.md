@@ -32,5 +32,5 @@ The advisor receives the startup profile, the weights and an evidence table for 
 - The score does not see competitors, taxes, licences, language, culture, distance or the product itself.
 - World Bank data is published with delay; some indicators lag by one to two years.
 - Weights are a judgement call, informed by what each industry needs. They are visible in the app and in `src/config.py` and can be challenged.
-- Five industries have their own indicators (Fintech, SaaS, HealthTech, CleanTech/energy, E-commerce/consumer); "Other industry" uses only the six core criteria and says so to the AI adviser. 42 countries so far.
+- Six industries have their own indicators (Fintech, software, health, energy, consumer, education); "Something else" uses only the six core criteria and says so to the AI adviser. 42 countries so far.
 - Rich, small countries rank high in most profiles because most indicators reward wealth and institutions. Use the weight sliders and the AI adviser to challenge this.
