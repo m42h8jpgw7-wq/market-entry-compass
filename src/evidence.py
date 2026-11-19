@@ -7,7 +7,7 @@ This module feeds two things:
 
 import pandas as pd
 
-from src.config import INDICATORS
+from src.config import INDICATORS, PILLARS, pillar_of
 from src.profile import StartupProfile
 
 TREND_YEARS = 5
@@ -24,8 +24,15 @@ def fmt_value(key: str, value: float) -> str:
         return f"{value / 1e9:.2f} bn people" if value >= 1e9 else f"{value / 1e6:,.1f} m people"
     if key in ("digital", "account_ownership", "tertiary", "ict_exports"):
         return f"{value:.0f} %"
-    if key == "rule_of_law":
+    if key in ("rule_of_law", "political_stability", "regulatory_quality", "corruption",
+               "gov_effectiveness"):
         return f"{value:+.2f}"
+    if key in ("current_account", "fdi_inflows", "trade_openness"):
+        return f"{value:.1f} % of GDP"
+    if key == "dist_geo":
+        return f"{value:,.0f} km"
+    if key == "dist_econ":
+        return f"{value:.2f}"
     if key in ("mobile_subs", "broadband"):
         return f"{value:.0f} per 100 people"
     if key in ("private_credit", "rnd"):
@@ -105,6 +112,7 @@ def country_evidence(panel, row: pd.Series, weights: dict, invert, year: int) ->
                 "weight": round(weight, 3),
                 "contribution": round(points * weight, 2),
                 "inverted": key in invert,
+                "pillar": PILLARS[pillar_of(key)],
                 "trend": _trend(panel, row["iso3"], key, year, value),
             }
         )
@@ -123,6 +131,8 @@ def country_evidence(panel, row: pd.Series, weights: dict, invert, year: int) ->
         "indicators": items,
         "strengths": strengths,
         "risks": risks,
+        "pillars": {PILLARS[p]: round(float(row[f"p_{p}"]), 1) for p in PILLARS
+                    if f"p_{p}" in row and pd.notna(row[f"p_{p}"])},
     }
 
 
@@ -148,6 +158,8 @@ def _line(item: dict) -> str:
 def country_paragraph(ev: dict) -> str:
     """Markdown explanation for one country, built only from the numbers."""
     parts = [f"**#{ev['rank']} {ev['country']}: {ev['score']:.0f}/100 points**"]
+    if ev.get("pillars"):
+        parts.append(" | ".join(f"{name} {value:.0f}" for name, value in ev["pillars"].items()))
 
     if ev["strengths"]:
         parts.append("**Why it fits:** " + "; ".join(_line(i) for i in ev["strengths"]) + ".")

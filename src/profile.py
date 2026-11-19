@@ -3,10 +3,13 @@
 from dataclasses import dataclass, field
 
 from src.config import (
+    BLOCK_FACTOR,
     BUDGET_MULTIPLIERS,
     BUSINESS_MODELS,
     INDICATORS,
     INDUSTRIES,
+    INSTITUTIONAL_BLOCK,
+    INSTITUTIONAL_SHARE,
     PRIORITIES,
 )
 
@@ -39,16 +42,27 @@ class StartupProfile:
         return self.industry == "other"
 
 
+def _normalise(weights: dict) -> dict:
+    total = sum(weights.values())
+    return {k: v / total for k, v in weights.items()} if total > 0 else {}
+
+
 def build_weights(profile: StartupProfile, available: set[str] | None = None,
-                  overrides: dict[str, float] | None = None):
+                  overrides: dict[str, float] | None = None,
+                  extra: dict[str, float] | None = None):
     """Return (weights, inverted_indicators) for this startup.
 
-    Steps: start from the industry focus, multiply by what the business model,
-    the risk priority and the budget say, apply optional manual factors, drop indicators that have no data,
-    and normalise so the weights add up to 1.
+    1. Start from the industry focus and multiply by what the business model,
+       the risk priority and the budget say.
+    2. Add the institutional block (political stability, regulation, ...) that
+       applies to every profile; its share depends on the risk priority.
+    3. Apply optional manual factors (`overrides`, 1.0 = unchanged) and drop
+       indicators that have no data.
+    4. `extra` adds absolute shares of the final total (e.g. closeness to home).
+    The result is normalised so the weights add up to 1.
     """
     focus = profile.focus_spec()
-    weights = dict(focus["weights"])
+    industry = {k: v for k, v in focus["weights"].items() if k in INDICATORS}
     invert = set(focus.get("invert", []))
 
     for table, key in (
@@ -57,19 +71,36 @@ def build_weights(profile: StartupProfile, available: set[str] | None = None,
         (BUDGET_MULTIPLIERS, profile.budget),
     ):
         for indicator, factor in table[key]["multipliers"].items():
-            if indicator in weights:
-                weights[indicator] *= factor
+            if indicator in industry:
+                industry[indicator] *= factor
 
-    if overrides:  # manual fine-tuning: factor per indicator (1.0 = unchanged)
-        for indicator, factor in overrides.items():
-            if indicator in weights:
-                weights[indicator] *= max(float(factor), 0.0)
+    block = {k: v for k, v in INSTITUTIONAL_BLOCK.items() if k in INDICATORS}
 
-    weights = {k: v for k, v in weights.items() if k in INDICATORS}
-    if available is not None:
-        weights = {k: v for k, v in weights.items() if k in available}
+    def usable(weights: dict) -> dict:
+        if overrides:
+            weights = {k: v * max(float(overrides.get(k, 1.0)), 0.0) for k, v in weights.items()}
+        if available is not None:
+            weights = {k: v for k, v in weights.items() if k in available}
+        return {k: v for k, v in weights.items() if v > 0}
 
-    total = sum(weights.values())
-    if total <= 0:
+    industry, block = _normalise(usable(industry)), _normalise(usable(block))
+    if not industry and not block:
         raise ValueError("No usable indicators for this profile. Run: python -m src.fetch_data")
-    return {k: v / total for k, v in weights.items()}, invert
+
+    share = min(INSTITUTIONAL_SHARE * BLOCK_FACTOR.get(profile.priority, 1.0), 0.6) if block else 0.0
+    if not industry:
+        share = 1.0
+    weights: dict[str, float] = {}
+    for k, v in industry.items():
+        weights[k] = weights.get(k, 0.0) + v * (1 - share)
+    for k, v in block.items():
+        weights[k] = weights.get(k, 0.0) + v * share
+
+    extra = {k: v for k, v in (extra or {}).items()
+             if v > 0 and (available is None or k in available) and k in INDICATORS}
+    if extra:
+        room = 1 - min(sum(extra.values()), 0.5)
+        weights = {k: v * room for k, v in weights.items()}
+        for k, v in extra.items():
+            weights[k] = weights.get(k, 0.0) + v
+    return _normalise(weights), invert

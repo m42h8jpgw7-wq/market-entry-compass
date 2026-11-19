@@ -14,7 +14,7 @@ Method (kept deliberately simple and explainable):
 import numpy as np
 import pandas as pd
 
-from src.config import INDICATORS
+from src.config import GATES, INDICATORS, PILLARS, pillar_of
 
 
 def build_panel(long_data: pd.DataFrame) -> pd.DataFrame:
@@ -68,6 +68,29 @@ def _scale_0_100(series: pd.Series, key: str, invert: bool = False) -> pd.Series
     return (values.clip(low, high) - low) / (high - low) * 100
 
 
+def _gate_failures(snapshot: pd.DataFrame, gates: list[dict]) -> dict[str, list[str]]:
+    """Countries that break a hard filter -> list of reasons. Missing data passes."""
+    failures: dict[str, list[str]] = {}
+    for gate in gates or []:
+        key, op, limit = gate["key"], gate["op"], gate["value"]
+        if key not in snapshot.columns:
+            continue
+        spec = GATES.get(key, {})
+        for row in snapshot[["iso3", "country", key]].itertuples(index=False):
+            value = row[2]
+            if pd.isna(value):
+                continue
+            broken = value < limit if op == ">=" else value > limit
+            if broken:
+                label = INDICATORS[key]["label"]
+                shown = value / spec.get("scale", 1)
+                wanted = limit / spec.get("scale", 1)
+                failures.setdefault(row.country, []).append(
+                    f"{label} {shown:,.1f} is {'below' if op == '>=' else 'above'} {wanted:,.1f}"
+                )
+    return failures
+
+
 def score_year(
     panel: pd.DataFrame,
     year: int,
@@ -75,22 +98,33 @@ def score_year(
     invert: set | frozenset = frozenset(),
     exclude: tuple | list = (),
     min_coverage: float = 0.7,
+    method: str = "arithmetic",
+    gates: list[dict] | None = None,
 ) -> pd.DataFrame:
     """Score every country for one year. Returns a ranked table.
 
-    `exclude` removes countries from the ranking (e.g. the startup's home
-    country). If a country lacks some indicators, its score is computed from
-    the criteria it has (weights renormalised). Countries whose available
-    criteria cover less than `min_coverage` of the total weight are left out;
-    their names are stored in the result's `.attrs["dropped"]`.
+    Every country in the data set is scaled together (so the home country is a
+    fair benchmark), then `exclude` removes countries from the ranking (e.g. the
+    home country). If a country lacks some indicators, its score is computed
+    from the criteria it has (weights renormalised). Countries whose available
+    criteria cover less than `min_coverage` of the total weight are left out.
+
+    method   "arithmetic": weighted average of points (a strength can offset a
+             weakness). "balanced": weighted geometric mean (a very weak
+             criterion drags the score down, like a weakest-link rule).
+    gates    hard filters [{"key", "op", "value"}]; countries failing one are
+             removed and listed in `.attrs["gated"]`.
+
+    Side information is stored in `.attrs`: dropped, gated, active, excluded
+    (the excluded countries' rows with scores as a list of dicts, a benchmark).
     """
     active = [k for k, w in weights.items() if w > 0 and k in panel.columns]
     total = sum(weights[k] for k in active)
     w = pd.Series({k: weights[k] / total for k in active})
 
-    snapshot = panel[(panel["year"] == year) & ~panel["iso3"].isin(exclude)].copy()
+    snapshot = panel[panel["year"] == year].copy()
     if snapshot.empty:
-        snapshot.attrs["dropped"] = []
+        snapshot.attrs.update(dropped=[], gated={}, active=active, excluded=[])
         return snapshot
 
     for key in active:
@@ -100,30 +134,54 @@ def score_year(
     present = pts.notna()
     covered = (present * w.values).sum(axis=1)  # share of the weight with data
     snapshot["coverage"] = covered
-    snapshot["score"] = (pts.fillna(0) * w.values).sum(axis=1) / covered.where(covered > 0)
+    denom = covered.where(covered > 0)
+    if method == "balanced":
+        logs = np.log(pts.clip(lower=1.0)).fillna(0)
+        snapshot["score"] = np.exp((logs * w.values).sum(axis=1) / denom)
+    else:
+        snapshot["score"] = (pts.fillna(0) * w.values).sum(axis=1) / denom
 
+    # pillar sub-scores: the same average, restricted to the criteria of one pillar
+    for pillar in PILLARS:
+        members = [k for k in active if pillar_of(k) == pillar]
+        if not members:
+            continue
+        wp = w[members]
+        part = pts[[f"pts_{k}" for k in members]]
+        share = (part.notna() * wp.values).sum(axis=1)
+        snapshot[f"p_{pillar}"] = (part.fillna(0) * wp.values).sum(axis=1) / share.where(share > 0)
+
+    excluded = snapshot[snapshot["iso3"].isin(exclude)].copy()
+    snapshot = snapshot[~snapshot["iso3"].isin(exclude)]
+
+    gated = _gate_failures(snapshot, gates)
     dropped = sorted(snapshot.loc[snapshot["coverage"] < min_coverage, "country"])
-    snapshot = snapshot[snapshot["coverage"] >= min_coverage]
-    snapshot = snapshot.sort_values("score", ascending=False).reset_index(drop=True)
+    keep = (snapshot["coverage"] >= min_coverage) & ~snapshot["country"].isin(gated)
+    snapshot = snapshot[keep].sort_values("score", ascending=False).reset_index(drop=True)
     snapshot["rank"] = snapshot.index + 1
-    snapshot.attrs["dropped"] = dropped
-    snapshot.attrs["active"] = active
+    snapshot.attrs.update(dropped=dropped, gated=gated, active=active,
+                          excluded=excluded.to_dict("records"))
     return snapshot
 
 
-def score_history(panel, weights, invert=frozenset(), exclude=(), min_countries=15):
+def score_history(panel, weights, invert=frozenset(), exclude=(), min_countries=15, method="arithmetic"):
     """Score for every country and every year (used for the time line chart)."""
     frames = []
     for year in sorted(panel["year"].unique()):
-        frame = score_year(panel, int(year), weights, invert, exclude)
+        frame = score_year(panel, int(year), weights, invert, exclude, method=method)
         if len(frame) >= min_countries:
             frames.append(frame[["iso3", "country", "year", "score", "rank"]])
     return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
 
 
-def latest_complete_year(panel, weights, exclude=(), min_countries=20) -> int:
+def latest_complete_year(panel, weights, exclude=(), min_countries=20, method="arithmetic") -> int:
     """Newest year in which at least `min_countries` can be scored."""
     for year in sorted(panel["year"].unique(), reverse=True):
-        if len(score_year(panel, int(year), weights, exclude=exclude)) >= min_countries:
+        if len(score_year(panel, int(year), weights, exclude=exclude, method=method)) >= min_countries:
             return int(year)
     raise ValueError("Not enough complete data. Run: python -m src.fetch_data")
+
+
+def excluded_frame(ranking: pd.DataFrame) -> pd.DataFrame:
+    """The excluded countries (e.g. home) with their scores, for benchmarking."""
+    return pd.DataFrame(ranking.attrs.get("excluded", []))

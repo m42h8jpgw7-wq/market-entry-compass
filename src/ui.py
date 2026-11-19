@@ -112,6 +112,37 @@ div[data-baseweb="select"] > div, .stTextInput input, .stTextArea textarea {{
 .stButton > button:focus-visible, input:focus-visible {{ outline: 2px solid {BLUE}; outline-offset: 2px; }}
 label p {{ font-size: .86rem !important; color: {MUTED}; font-weight: 500; }}
 .stTabs [data-baseweb="tab"] {{ font-weight: 500; }}
+
+/* workbench */
+.mec-topbar {{ display: flex; align-items: baseline; justify-content: space-between; gap: 1rem;
+  border-bottom: 1px solid {LINE}; padding: 0 0 .7rem; margin-bottom: .9rem; }}
+.mec-topbar .brand {{ font-family: 'Inter Tight', 'Inter', system-ui, sans-serif; font-weight: 700; font-size: 1.05rem;
+  color: {INK}; letter-spacing: -0.01em; }}
+.mec-topbar .brand i {{ font-style: normal; color: {BLUE}; }}
+.mec-topbar .stamp {{ color: {MUTED}; font-size: .82rem; text-align: right; }}
+.mec-kpis {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0;
+  background: #fff; border: 1px solid {LINE}; border-radius: 12px; margin: .8rem 0 1rem; overflow: hidden; }}
+.mec-kpi {{ padding: .85rem 1.1rem; border-right: 1px solid {LINE}; }}
+.mec-kpi:last-child {{ border-right: 0; }}
+.mec-kpi .l {{ color: {MUTED}; font-size: .8rem; }}
+.mec-kpi .v {{ font-family: 'Inter Tight', 'Inter', system-ui, sans-serif; font-size: 1.45rem; font-weight: 600;
+  letter-spacing: -0.02em; font-variant-numeric: tabular-nums; margin-top: .1rem; }}
+.mec-kpi .s {{ color: {MUTED}; font-size: .78rem; }}
+.mec-badge {{ display: inline-block; border-radius: 999px; padding: .08rem .6rem; font-size: .78rem; font-weight: 600; }}
+.mec-badge.High {{ background: #E3F4EE; color: {GOOD}; }}
+.mec-badge.Medium {{ background: #FFF1D9; color: #8A5A00; }}
+.mec-badge.Low {{ background: #F9E3E0; color: {BAD}; }}
+.mec-memo {{ background: #fff; border: 1px solid {LINE}; border-left: 4px solid {BLUE}; border-radius: 8px;
+  padding: 1rem 1.3rem; line-height: 1.6; }}
+.mec-memo p {{ margin: 0 0 .55rem; }}
+.mec-memo p:last-child {{ margin-bottom: 0; }}
+.mec-disclaimer {{ color: {MUTED}; font-size: .8rem; line-height: 1.5; border-top: 1px solid {LINE};
+  margin-top: 2.2rem; padding-top: .9rem; }}
+.stTabs [data-baseweb="tab-list"] {{ gap: 1.4rem; border-bottom: 1px solid {LINE}; }}
+.stTabs [data-baseweb="tab"] {{ padding: .5rem 0; font-weight: 500; color: {MUTED}; }}
+.stTabs [aria-selected="true"] {{ color: {INK}; font-weight: 600; }}
+[data-testid="stDataFrame"], .mec-rank, .mec-kpi {{ font-variant-numeric: tabular-nums; }}
+[data-testid="stExpander"] {{ background: #fff; border: 1px solid {LINE}; border-radius: 10px; }}
 </style>
 """
 
@@ -166,3 +197,31 @@ def tile(title: str, description: str) -> str:
 
 def chips(items: list[str]) -> str:
     return '<div class="mec-chips">' + "".join(f'<span class="mec-chip">{esc(i)}</span>' for i in items) + "</div>"
+
+
+def topbar(stamp: str) -> str:
+    return (f'<div class="mec-topbar"><div class="brand">Market Entry <i>Compass</i></div>'
+            f'<div class="stamp">{esc(stamp)}</div></div>')
+
+
+def kpis(items: list[tuple[str, str, str]]) -> str:
+    """items = [(label, value, small text)]; values are plain text (escaped)."""
+    cells = "".join(
+        f'<div class="mec-kpi"><div class="l">{esc(l)}</div><div class="v">{esc(v)}</div>'
+        f'<div class="s">{esc(sub)}</div></div>' for l, v, sub in items)
+    return f'<div class="mec-kpis">{cells}</div>'
+
+
+def badge(level: str) -> str:
+    return f'<span class="mec-badge {esc(level)}">{esc(level)}</span>'
+
+
+def memo(markdown_text: str) -> str:
+    """Summary text (markdown **bold** only) as paragraphs in a memo box."""
+    paragraphs = []
+    for para in markdown_text.split("\n\n"):
+        safe = esc(para)
+        while "**" in safe:
+            safe = safe.replace("**", "<b>", 1).replace("**", "</b>", 1)
+        paragraphs.append(f"<p>{safe}</p>")
+    return f'<div class="mec-memo">{"".join(paragraphs)}</div>'

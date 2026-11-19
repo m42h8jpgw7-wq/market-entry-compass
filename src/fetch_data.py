@@ -12,8 +12,10 @@ World Bank does not deliver them; the dashboard then simply leaves that
 criterion out. Core indicators must work, otherwise the script stops.
 """
 
+import json
 import sys
 import time
+from datetime import date
 from pathlib import Path
 
 import pandas as pd
@@ -34,7 +36,7 @@ def fetch_indicator(key: str, spec: dict) -> pd.DataFrame:
     for attempt in attempts:
         try:
             return _download(key, attempt["code"], attempt.get("source"))
-        except RuntimeError as error:
+        except (RuntimeError, requests.RequestException) as error:
             print(f"  code {attempt['code']} did not work, trying the next option")
             last_error = error
     raise last_error
@@ -88,6 +90,8 @@ def _download(key: str, code: str, source: int | None) -> pd.DataFrame:
 def main() -> None:
     frames, skipped = [], []
     for key, spec in INDICATORS.items():
+        if spec.get("derived"):
+            continue  # computed from the home country, nothing to download
         print(f"Downloading {key} ({spec['code']}) ...", flush=True)
         try:
             frame = fetch_indicator(key, spec)
@@ -106,6 +110,10 @@ def main() -> None:
     out = Path(DATA_FILE)
     out.parent.mkdir(parents=True, exist_ok=True)
     data.to_csv(out, index=False)
+    meta = {"retrieved": date.today().isoformat(), "source": "World Bank Open Data (api.worldbank.org, v2)",
+            "years": f"{START_YEAR}-{END_YEAR}", "countries": int(data["iso3"].nunique()),
+            "indicators": sorted(set(data["indicator"])), "skipped": skipped}
+    (out.parent / "meta.json").write_text(json.dumps(meta, indent=2))
     print(f"\nSaved {len(data)} rows for {data['iso3'].nunique()} countries to {out}")
     if skipped:
         print("Skipped optional indicators: " + ", ".join(skipped))

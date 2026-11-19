@@ -240,7 +240,7 @@ def test_manual_override_changes_weight_and_zero_removes_indicator():
     more, _ = build_weights(StartupProfile(), overrides={"growth": 2.0})
     none, _ = build_weights(StartupProfile(), overrides={"growth": 0.0})
     assert more["growth"] > base["growth"]
-    assert none["growth"] == 0 and sum(none.values()) == pytest.approx(1.0)
+    assert "growth" not in none and sum(none.values()) == pytest.approx(1.0)
 
 
 def test_other_industry_prompt_names_the_gap_and_isolates_free_text():

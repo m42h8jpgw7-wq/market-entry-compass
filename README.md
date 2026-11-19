@@ -4,33 +4,45 @@
 
 Most founders pick their first foreign market by gut feeling or by whom they happen to know. Large companies have strategy teams for this decision; early-stage startups do not. Market Entry Compass is a free, transparent screening tool for startups in any industry: you describe your startup, it ranks 42 countries with public data, shows them on a globe you can turn and click, and explains the result. An optional AI advisor (Claude) writes a detailed recommendation, restricted to the numbers the tool provides.
 
-> Status: Version 4 (work in progress). A first screening tool, not a forecast and not legal or financial advice.
+> Status: Version 5. A screening tool built on public data. Not a forecast, not investment, legal or tax advice.
 
-![Startup profile and top recommendations](docs/img/startup-profile.png)
+![Overview with executive summary and top markets](docs/img/overview.png)
 
 ![Globe and ranking](docs/img/globe-and-ranking.png)
 
-![Country analysis](docs/img/country-analysis.png)
+![Robustness: how far each market's rank moves when the weights change](docs/img/robustness.png)
 
-*Screenshots with real World Bank data (fintech, payments, home country Germany). Question 2 of 7, the result, and the country analysis.*
+![Compare markets and the home benchmark](docs/img/compare.png)
+
+![Heat map of points per criterion and downloads](docs/img/heatmap.png)
+
+*Screenshots with real World Bank data (fintech, payments, home country Germany).*
+
+## Two ways to use it
+
+- **Guided (first-time founders).** Seven plain questions with big answer cards, no jargon, then a result with a written explanation.
+- **Workbench (analysts and investors).** The same result opens as a screening workbench: executive summary, three pillars, hard filters, a choice of scoring method, robustness tests, side-by-side comparison with a home benchmark, a full audit trail and Excel export.
 
 ## What it does
 
-- **Seven simple questions, no experience needed:** industry, what exactly you do, who pays, budget, what matters most, home country, and an optional free-text description. Big answer cards instead of forms, plain-language explanations everywhere.
-- **Seven industries, 21 focuses:** Fintech, software for companies, health, energy and climate, shopping and consumer, education, and "Something else" for any other industry (you name it, general criteria are used). A payments fintech and a banking-for-the-unbanked startup want opposite things from "account ownership"; an off-grid energy startup wants LOW electricity access. Each focus has its own weights (see [`src/config.py`](src/config.py)).
-- **Advanced (optional):** make any criterion count more or less with a slider and watch the ranking change.
+- **Seven industries, 21 focuses** (Fintech, software, health, energy, consumer, education, "Something else"). Each focus has its own weights; a payments fintech and a banking-for-the-unbanked startup want opposite things from "account ownership".
+- **Executive summary:** leader, lead over #2, confidence, which criteria decide the answer, main weakness. Rule-based from the numbers.
+- **Robustness:** weights are shaken 1,000 times to show how often each market stays first or in the top three, plus a confidence rating (High, Medium, Low) and a list of decisive criteria. A ranking without its uncertainty is not a decision basis.
+- **Three pillars:** market opportunity, operating environment, stability and governance. Institutional criteria (political stability, regulatory quality, corruption, government effectiveness, external balance, FDI, openness) are part of every profile.
+- **Assumptions you control:** scoring method (weighted average or balanced/weakest-link), hard filters (minimum stability, rule of law, population, income; maximum inflation), closeness to your home country (geographic and economic distance), and a slider for every weight.
+- **Compare** two to four markets and the home country as a benchmark, with a pillar radar and a value table.
+- **Scorecard and export:** sortable table, heat map, Excel workbook (assumptions, raw values, points, weights, robustness, filters, sources with indicator codes and retrieval date), one-page brief, CSV, and a scenario file that restores all assumptions. The page address holds your answers, so results can be shared as a link.
 - **3D globe:** drag to rotate, click a country to open its analysis.
-- **Country analysis:** score, strengths, risks, five-year trends, a plain-language explanation of every criterion, score history since 2005.
-- **Data briefing:** a rule-based written explanation, built only from the numbers.
-- **AI advisor (optional):** Claude reads your profile and the evidence tables and writes a structured recommendation: why #1, why not the others, risks, first 90 days, what the data cannot tell you. It must justify every country with concrete data points and say what to verify. You bring your own Anthropic API key; the app does not store it.
+- **AI advisor (optional):** Claude writes an investment-memo style recommendation from your profile, the evidence and the robustness results. It may only use the numbers the tool provides. You bring your own Anthropic API key; the app does not store it.
 
 ## How the score works
 
 1. Every indicator is scaled to 0-100 points across all countries (outliers capped at the 5th/95th percentile).
-2. Weights come from the industry focus and are adjusted by your answers (customers, budget, risk priority).
-3. The weighted points add up to the country score.
+2. Weights come from the industry focus, adjusted by customers, budget and risk priority, plus an institutional block for every profile.
+3. Points are combined by weighted average or by weighted geometric mean (balanced).
+4. Robustness tests show how stable the order is.
 
-Indicators (World Bank open data): *core:* GDP growth, purchasing power, population, inflation (best near 2 %), internet users, rule of law. *Fintech:* account ownership, mobile subscriptions, private credit, secure servers. *SaaS:* broadband, R&D spending, researchers, ICT service exports, tertiary enrolment. *Health:* health spending, population 65+, physicians, hospital beds. *Energy:* renewable shares, electricity access, CO2 per person. *Consumer:* urban and working-age population, logistics performance, household spending.
+Indicators (World Bank open data): *core:* GDP growth, purchasing power, population, inflation (best near 2 %), internet users, rule of law. *Institutions:* political stability, regulatory quality, corruption control, government effectiveness, current account, FDI, trade openness. *Fintech:* account ownership, mobile subscriptions, private credit, secure servers. *SaaS:* broadband, R&D spending, researchers, ICT service exports, tertiary enrolment. *Health:* health spending, population 65+, physicians, hospital beds. *Energy:* renewable shares, electricity access, CO2 per person. *Consumer:* urban and working-age population, logistics performance, household spending.
 
 Details and limits: [docs/methodology.md](docs/methodology.md).
 
@@ -48,21 +60,24 @@ streamlit run app.py         # opens the dashboard in your browser
 python -m pytest             # runs the tests
 ```
 
-For the AI advisor, paste your Anthropic API key into the Advice section (console.anthropic.com). Without a key everything else works.
+For the AI advisor, paste your Anthropic API key into the AI advisor tab (console.anthropic.com). Without a key everything else works.
 
 ## Project structure
 
 ```
-app.py               Streamlit dashboard (profile form, globe, analysis, advice)
-src/ui.py            stylesheet and small HTML helpers (design)
-src/config.py        countries, indicators, industry profiles, weights
+app.py               Streamlit app (guided questions, workbench tabs)
+src/ui.py            stylesheet and small HTML helpers
+src/config.py        countries, indicators, pillars, industries, weights, hard filters
 src/profile.py       startup profile -> score weights
-src/scoring.py       data panel and 0-100 scoring
+src/scoring.py       data panel, 0-100 scoring, methods, filters
+src/analytics.py     robustness, pivotal criteria, distance, executive summary
 src/evidence.py      numbers, trends, strengths, risks, data briefing
+src/export.py        Excel workbook and one-page brief
+src/state.py         shareable link and scenario file (validated)
 src/advisor.py       prompt and streaming call to Claude
 src/fetch_data.py    World Bank download
-tests/               tests for scoring, profiles, evidence, prompt
-docs/methodology.md  how it works and where it falls short
+tests/               tests for scoring, pillars, filters, robustness, export, state
+docs/                methodology and how to add an industry
 ```
 
 ## Roadmap

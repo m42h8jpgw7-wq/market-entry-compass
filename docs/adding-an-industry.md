@@ -5,3 +5,5 @@
 3. **Formatting.** Add a branch to `fmt_value` in `src/evidence.py` so values show with units.
 4. **Data.** Run `python -m src.fetch_data`. Indicators that the World Bank no longer serves are skipped and the weights are renormalised.
 5. **Check.** Run `python -m pytest` (every focus must only use known indicators) and look at the ranking: does the top and bottom make sense for the industry? Write down your reasoning for each weight.
+6. **Pillar.** If the new indicator is not an operating-environment criterion, add it to `PILLAR_OF` in `src/config.py` (opportunity, operating, stability). Unlisted indicators count as operating environment.
+7. **Institutional block.** Every profile already gets the institutional block (`INSTITUTIONAL_BLOCK`); do not repeat those indicators in an industry's weights.
