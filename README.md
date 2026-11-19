@@ -2,9 +2,9 @@
 
 **Which country should your startup enter first?**
 
-Most founders pick their first foreign market by gut feeling or by whom they happen to know. Large companies have strategy teams for this decision; early-stage startups do not. Market Entry Compass is a free, transparent screening tool: you describe your startup, it ranks 42 countries with public data, shows them on a globe you can turn and click, and explains the result. An optional AI advisor (Claude) writes a detailed recommendation, restricted to the numbers the tool provides.
+Most founders pick their first foreign market by gut feeling or by whom they happen to know. Large companies have strategy teams for this decision; early-stage startups do not. Market Entry Compass is a free, transparent screening tool for startups in any industry: you describe your startup, it ranks 42 countries with public data, shows them on a globe you can turn and click, and explains the result. An optional AI advisor (Claude) writes a detailed recommendation, restricted to the numbers the tool provides.
 
-> Status: Version 2 (work in progress). A first screening tool, not a forecast and not legal or financial advice.
+> Status: Version 3 (work in progress). A first screening tool, not a forecast and not legal or financial advice.
 
 ![Startup profile and top recommendations](docs/img/startup-profile.png)
 
@@ -17,7 +17,8 @@ Most founders pick their first foreign market by gut feeling or by whom they hap
 ## What it does
 
 - **Startup profile:** industry and focus, customers (B2B / B2C), stage, budget, risk priority, home country, free-text description.
-- **Industry-specific scoring:** a payments fintech and a financial-inclusion fintech want opposite things from "account ownership"; B2B software cares about connectivity and tech talent. Each focus has its own weights (see [`src/config.py`](src/config.py)).
+- **Six industries, ten focuses:** Fintech, SaaS/B2B software, HealthTech, CleanTech/energy, E-commerce/consumer, and "Other industry" for everything else (general criteria plus your own description). A payments fintech and a financial-inclusion fintech want opposite things from "account ownership"; an off-grid energy startup wants LOW electricity access. Each focus has its own weights (see [`src/config.py`](src/config.py)).
+- **Fine-tune:** make any criterion more or less important with a slider and watch the ranking change.
 - **3D globe:** drag to rotate, click a country to open its analysis.
 - **Country analysis:** score, strengths, risks, five-year trends, points per criterion, score history since 2005.
 - **Data briefing:** a rule-based written explanation, built only from the numbers.
@@ -29,7 +30,7 @@ Most founders pick their first foreign market by gut feeling or by whom they hap
 2. Weights come from the industry focus and are adjusted by your answers (customers, budget, risk priority).
 3. The weighted points add up to the country score.
 
-Indicators (World Bank open data): GDP growth, purchasing power, population, inflation (best near 2 %), internet users, rule of law; Fintech: account ownership, mobile subscriptions, private credit, secure servers; SaaS: broadband, R&D spending, researchers, ICT service exports, tertiary enrolment.
+Indicators (World Bank open data): *core:* GDP growth, purchasing power, population, inflation (best near 2 %), internet users, rule of law. *Fintech:* account ownership, mobile subscriptions, private credit, secure servers. *SaaS:* broadband, R&D spending, researchers, ICT service exports, tertiary enrolment. *Health:* health spending, population 65+, physicians, hospital beds. *Energy:* renewable shares, electricity access, CO2 per person. *Consumer:* urban and working-age population, logistics performance, household spending.
 
 Details and limits: [docs/methodology.md](docs/methodology.md).
 
@@ -47,12 +48,13 @@ streamlit run app.py         # opens the dashboard in your browser
 python -m pytest             # runs the tests
 ```
 
-For the AI advisor, paste your Anthropic API key into the sidebar (console.anthropic.com). Without a key everything else works.
+For the AI advisor, paste your Anthropic API key into the Advice section (console.anthropic.com). Without a key everything else works.
 
 ## Project structure
 
 ```
 app.py               Streamlit dashboard (profile form, globe, analysis, advice)
+src/ui.py            stylesheet and small HTML helpers (design)
 src/config.py        countries, indicators, industry profiles, weights
 src/profile.py       startup profile -> score weights
 src/scoring.py       data panel and 0-100 scoring
@@ -65,7 +67,7 @@ docs/methodology.md  how it works and where it falls short
 
 ## Roadmap
 
-- [ ] More industries (HealthTech, CleanTech) with their own indicators
+- [ ] More industries with their own indicators (see [docs/adding-an-industry.md](docs/adding-an-industry.md))
 - [ ] Forecasts from published projections (IMF, UN), clearly labelled as estimates
 - [ ] Regional data below country level, taxes, funding landscape
 - [ ] Automatic check that every number in the AI text appears in the evidence

@@ -110,6 +110,87 @@ INDICATORS = {
         "question": "Is there an educated workforce coming through?",
         "higher_is_better": True, "carry": 5, "optional": True,
     },
+    # ----- health -----------------------------------------------------------
+    "health_spend": {
+        "group": "health", "code": "SH.XPD.CHEX.PC.CD",
+        "label": "Health spending per person", "unit": "current US$",
+        "question": "How much is spent on health per person?",
+        "higher_is_better": True, "log": True, "carry": 3, "optional": True,
+    },
+    "health_gdp": {
+        "group": "health", "code": "SH.XPD.CHEX.GD.ZS",
+        "label": "Health spending", "unit": "% of GDP",
+        "question": "How important is health in the economy?",
+        "higher_is_better": True, "carry": 3, "optional": True,
+    },
+    "pop_65": {
+        "group": "health", "code": "SP.POP.65UP.TO.ZS",
+        "label": "Population aged 65+", "unit": "% of population",
+        "question": "How large is the ageing, high-need population?",
+        "higher_is_better": True, "carry": 3, "optional": True,
+    },
+    "physicians": {
+        "group": "health", "code": "SH.MED.PHYS.ZS",
+        "label": "Physicians", "unit": "per 1,000 people",
+        "question": "How well staffed is the health system?",
+        "higher_is_better": True, "carry": 8, "optional": True,
+    },
+    "hospital_beds": {
+        "group": "health", "code": "SH.MED.BEDS.ZS",
+        "label": "Hospital beds", "unit": "per 1,000 people",
+        "question": "How much clinical capacity exists?",
+        "higher_is_better": True, "carry": 10, "optional": True,
+    },
+    # ----- energy / cleantech ------------------------------------------------
+    "renewable_share": {
+        "group": "energy", "code": "EG.FEC.RNEW.ZS",
+        "label": "Renewable energy share", "unit": "% of final energy",
+        "question": "How far has the energy transition come?",
+        "higher_is_better": True, "carry": 4, "optional": True,
+    },
+    "renewable_elec": {
+        "group": "energy", "code": "EG.ELC.RNEW.ZS",
+        "label": "Renewable electricity", "unit": "% of electricity output",
+        "question": "How green is the power grid?",
+        "higher_is_better": True, "carry": 4, "optional": True,
+    },
+    "electricity_access": {
+        "group": "energy", "code": "EG.ELC.ACCS.ZS",
+        "label": "Electricity access", "unit": "% of population",
+        "question": "How many people still lack reliable power?",
+        "higher_is_better": True, "carry": 4, "optional": True,
+    },
+    "co2_pc": {
+        "group": "energy", "code": "EN.GHG.CO2.PC.CE.AR5",
+        "label": "CO2 emissions", "unit": "tonnes per person",
+        "question": "How much is there to decarbonise?",
+        "higher_is_better": True, "carry": 5, "optional": True,
+    },
+    # ----- consumer / e-commerce --------------------------------------------
+    "urban_share": {
+        "group": "consumer", "code": "SP.URB.TOTL.IN.ZS",
+        "label": "Urban population", "unit": "% of population",
+        "question": "Are customers concentrated and easy to deliver to?",
+        "higher_is_better": True, "carry": 3, "optional": True,
+    },
+    "working_age": {
+        "group": "consumer", "code": "SP.POP.1564.TO.ZS",
+        "label": "Working-age population", "unit": "% aged 15-64",
+        "question": "Is there a large earning, spending age group?",
+        "higher_is_better": True, "carry": 3, "optional": True,
+    },
+    "logistics": {
+        "group": "consumer", "code": "LP.LPI.OVRL.XQ",
+        "label": "Logistics performance", "unit": "index, 1 to 5",
+        "question": "Can goods be shipped reliably?",
+        "higher_is_better": True, "carry": 7, "optional": True,
+    },
+    "consumption_pc": {
+        "group": "consumer", "code": "NE.CON.PRVT.PC.KD",
+        "label": "Household spending per person", "unit": "constant US$",
+        "question": "How much do households actually spend?",
+        "higher_is_better": True, "log": True, "carry": 3, "optional": True,
+    },
 }
 
 # ---------------------------------------------------------------------------
@@ -161,6 +242,102 @@ INDUSTRIES = {
                     "digital": 0.08, "ict_exports": 0.10, "rnd": 0.09,
                     "researchers": 0.07, "tertiary": 0.04, "market_size": 0.08,
                     "growth": 0.08, "stability": 0.10,
+                },
+            },
+        },
+    },
+    "health": {
+        "label": "HealthTech / medical",
+        "description": "Digital health, telemedicine, medical devices and health services.",
+        "focuses": {
+            "digital_health": {
+                "label": "Digital health and telemedicine",
+                "text": "Needs connected patients, a growing older population and "
+                        "too few doctors (scarcity is the opportunity), plus rules that protect contracts.",
+                "weights": {
+                    "digital": 0.14, "mobile_subs": 0.08, "pop_65": 0.14, "physicians": 0.14,
+                    "health_spend": 0.12, "market_size": 0.10, "rule_of_law": 0.12,
+                    "growth": 0.08, "stability": 0.08,
+                },
+                "invert": ["physicians"],
+            },
+            "medtech": {
+                "label": "Medical devices and hospital sales",
+                "text": "Needs health systems that spend money and have clinical capacity, "
+                        "an ageing population and a reliable legal system.",
+                "weights": {
+                    "health_spend": 0.18, "health_gdp": 0.10, "hospital_beds": 0.10,
+                    "physicians": 0.08, "pop_65": 0.14, "purchasing_power": 0.10,
+                    "rule_of_law": 0.14, "market_size": 0.08, "stability": 0.08,
+                },
+            },
+        },
+    },
+    "energy": {
+        "label": "CleanTech / energy",
+        "description": "Renewable energy, storage, efficiency and energy access.",
+        "focuses": {
+            "transition": {
+                "label": "Renewables, storage and efficiency",
+                "text": "Needs a large economy with room to decarbonise, a grid that is "
+                        "opening up to renewables and stable rules for long investments.",
+                "weights": {
+                    "co2_pc": 0.14, "renewable_share": 0.12, "renewable_elec": 0.10,
+                    "purchasing_power": 0.12, "growth": 0.12, "market_size": 0.10,
+                    "rule_of_law": 0.18, "stability": 0.12,
+                },
+            },
+            "access": {
+                "label": "Energy access and off-grid solutions",
+                "text": "Looks for many people without reliable power who can still pay "
+                        "for small solutions, so LOW electricity access is an opportunity.",
+                "weights": {
+                    "electricity_access": 0.36, "market_size": 0.14, "growth": 0.14,
+                    "mobile_subs": 0.10, "purchasing_power": 0.04, "rule_of_law": 0.11,
+                    "stability": 0.11,
+                },
+                "invert": ["electricity_access"],
+            },
+        },
+    },
+    "consumer": {
+        "label": "E-commerce / consumer",
+        "description": "Online retail, consumer brands, marketplaces and consumer apps.",
+        "focuses": {
+            "retail": {
+                "label": "Online retail and consumer brands",
+                "text": "Needs many online, urban, spending households and "
+                        "reliable delivery and payments.",
+                "weights": {
+                    "digital": 0.14, "consumption_pc": 0.14, "urban_share": 0.10,
+                    "logistics": 0.14, "account_ownership": 0.10, "market_size": 0.12,
+                    "working_age": 0.06, "rule_of_law": 0.10, "growth": 0.10,
+                },
+            },
+            "apps": {
+                "label": "Consumer apps and subscriptions",
+                "text": "Needs a young, mobile, digitally paying population and "
+                        "legal certainty for digital contracts.",
+                "weights": {
+                    "digital": 0.16, "mobile_subs": 0.12, "working_age": 0.10,
+                    "purchasing_power": 0.14, "account_ownership": 0.14, "market_size": 0.14,
+                    "rule_of_law": 0.10, "growth": 0.10,
+                },
+            },
+        },
+    },
+    "other": {
+        "label": "Other industry",
+        "description": "Any industry not listed. Uses the criteria that matter for every startup.",
+        "focuses": {
+            "general": {
+                "label": "General market attractiveness",
+                "text": "No industry-specific data is used. The score covers growth, "
+                        "purchasing power, market size, stability, internet reach and rule of law. "
+                        "Use your description, the AI adviser and the weight sliders to fit it to your case.",
+                "weights": {
+                    "growth": 0.20, "purchasing_power": 0.16, "market_size": 0.16,
+                    "stability": 0.12, "digital": 0.14, "rule_of_law": 0.22,
                 },
             },
         },

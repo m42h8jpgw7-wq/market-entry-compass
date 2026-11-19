@@ -24,19 +24,27 @@ class StartupProfile:
     description: str = ""          # free text: what the startup does, for whom
     home_country: str = "DEU"      # ISO3; excluded from the ranking
     extra_notes: str = field(default="")  # constraints: languages, regulation, team ...
+    industry_name: str = ""        # free text, used when industry == "other"
 
     def focus_spec(self) -> dict:
         return INDUSTRIES[self.industry]["focuses"][self.focus]
 
     def industry_label(self) -> str:
+        if self.industry == "other" and self.industry_name.strip():
+            return f"Other: {self.industry_name.strip()}"
         return INDUSTRIES[self.industry]["label"]
 
+    def is_generic(self) -> bool:
+        """True if no industry-specific indicators are used."""
+        return self.industry == "other"
 
-def build_weights(profile: StartupProfile, available: set[str] | None = None):
+
+def build_weights(profile: StartupProfile, available: set[str] | None = None,
+                  overrides: dict[str, float] | None = None):
     """Return (weights, inverted_indicators) for this startup.
 
     Steps: start from the industry focus, multiply by what the business model,
-    the risk priority and the budget say, drop indicators that have no data,
+    the risk priority and the budget say, apply optional manual factors, drop indicators that have no data,
     and normalise so the weights add up to 1.
     """
     focus = profile.focus_spec()
@@ -51,6 +59,11 @@ def build_weights(profile: StartupProfile, available: set[str] | None = None):
         for indicator, factor in table[key]["multipliers"].items():
             if indicator in weights:
                 weights[indicator] *= factor
+
+    if overrides:  # manual fine-tuning: factor per indicator (1.0 = unchanged)
+        for indicator, factor in overrides.items():
+            if indicator in weights:
+                weights[indicator] *= max(float(factor), 0.0)
 
     weights = {k: v for k, v in weights.items() if k in INDICATORS}
     if available is not None:

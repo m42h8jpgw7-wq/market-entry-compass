@@ -7,7 +7,7 @@ The visitor brings their own Anthropic API key; the app never stores it.
 
 from collections.abc import Iterator
 
-from src.config import ADVISOR_MODEL, BUDGET_MULTIPLIERS, BUSINESS_MODELS, INDICATORS, PRIORITIES
+from src.config import ADVISOR_MODEL, BUDGET_MULTIPLIERS, BUSINESS_MODELS, INDICATORS, INDUSTRIES, PRIORITIES
 from src.profile import StartupProfile
 
 SYSTEM_PROMPT = """You are a senior market-entry analyst who advises early-stage founders.
@@ -82,10 +82,16 @@ def build_prompt(profile: StartupProfile, evidence: list[dict], weights: dict,
         f"- {INDICATORS[k]['label']}: {w * 100:.0f} %"
         for k, w in sorted(weights.items(), key=lambda kv: kv[1], reverse=True)
     )
+    generic_note = (
+        "\nIMPORTANT: The industry is not covered by industry-specific indicators. "
+        "The scores only reflect general market attractiveness. State clearly in your answer which "
+        "industry-specific facts (for example regulation, competitors, sector demand) the data "
+        "does not show, and what the founder must research.\n"
+    ) if profile.is_generic() else ""
     return f"""Write the market-entry advice in {language}.
 
 <startup_profile>
-Industry: {profile.industry_label()}
+Industry: {INDUSTRIES[profile.industry]['label']}
 Focus: {focus['label']} ({focus['text']})
 Business model: {BUSINESS_MODELS[profile.business_model]['label']}
 Stage: {profile.stage}
@@ -94,6 +100,10 @@ Risk priority: {PRIORITIES[profile.priority]['label']}
 Home country (excluded from the ranking): {profile.home_country}
 </startup_profile>
 
+<industry_name_by_founder>
+{profile.industry_name.strip() or "(not applicable)"}
+</industry_name_by_founder>
+{generic_note}
 <startup_description>
 {profile.description.strip() or "(none given)"}
 </startup_description>

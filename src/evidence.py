@@ -32,6 +32,21 @@ def fmt_value(key: str, value: float) -> str:
         return f"{value:.1f} % of GDP"
     if key in ("researchers", "secure_servers"):
         return f"{value:,.0f} per million people"
+    if key == "health_spend":
+        return f"${value:,.0f} per person"
+    if key in ("health_gdp",):
+        return f"{value:.1f} % of GDP"
+    if key in ("pop_65", "working_age", "urban_share", "renewable_share", "renewable_elec",
+               "electricity_access"):
+        return f"{value:.1f} %"
+    if key in ("physicians", "hospital_beds"):
+        return f"{value:.1f} per 1,000 people"
+    if key == "co2_pc":
+        return f"{value:.1f} t per person"
+    if key == "logistics":
+        return f"{value:.2f} of 5"
+    if key == "consumption_pc":
+        return f"${value:,.0f} per person"
     return f"{value:,.1f}"
 
 
